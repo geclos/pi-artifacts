@@ -6,7 +6,7 @@ Polished, shareable artifacts for [pi](https://github.com/badlogic/pi-mono).
 
 `pi-artifacts` adds artifact tools, an `/artifact` command, and an `artifact-designer` skill so Pi can turn a prompt into a self-contained HTML report, dashboard, timeline, prototype, or walkthrough—then validate, preview, import, and publish it.
 
-<video src="docs/assets/artifact-demo.m4v" controls muted playsinline width="100%" aria-label="pi-artifacts demo"></video>
+![pi-artifacts demo](docs/assets/artifact-demo.gif)
 
 ## Install
 
