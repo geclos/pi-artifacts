@@ -27,7 +27,16 @@ export async function readTextAsset(pathFromSrc: string) {
   return readFile(join(packageRoot, "src", pathFromSrc), "utf8");
 }
 
-export async function ensureArtifactScaffold(cwd: string, params: { id?: string; title: string; kind?: string }) {
+export async function findEntryFile(cwd: string, id: string): Promise<string | undefined> {
+  const sourceDir = join(artifactDir(cwd, id), "source");
+  for (const name of ["index.md", "index.html", "index.htm", "README.md"]) {
+    const p = join(sourceDir, name);
+    if (existsSync(p)) return p;
+  }
+  return undefined;
+}
+
+export async function ensureArtifactScaffold(cwd: string, params: { id?: string; title: string; kind?: string; format?: "html" | "md" }) {
   const base = artifactsRoot(cwd);
   await mkdir(base, { recursive: true });
   let id = params.id ? slugify(params.id) : slugify(params.title);
@@ -43,6 +52,7 @@ export async function ensureArtifactScaffold(cwd: string, params: { id?: string;
   await mkdir(join(dir, "dist"), { recursive: true });
   await mkdir(join(dir, "deploy"), { recursive: true });
 
+  const format = params.format || "html";
   const theme = await readTextAsset("design/artifact-theme.css");
   const template = await readTextAsset("design/artifact-template.html");
   const design = await resolveDesignSystem(cwd);
@@ -50,15 +60,25 @@ export async function ensureArtifactScaffold(cwd: string, params: { id?: string;
     ? `Project/user design system active: ${escapeHtml(design.displayPath)}. Follow its Markdown guidance for visual choices while preserving self-contained artifact constraints.`
     : "This artifact uses Pi Artifact UI, grounded in Vercel Geist.";
   const designComment = design ? `\n<!-- Active artifact design system: ${escapeHtml(design.displayPath)} (${design.fingerprint}). The agent should follow that DESIGN.md for visual choices. -->\n` : "";
-  const content = `    <header class="pi-header">\n      <div>\n        <h1 class="pi-title">${escapeHtml(params.title)}</h1>\n        <p class="pi-subtitle">Replace this scaffold with the artifact content.</p>\n      </div>\n      <span class="pi-badge pi-badge-blue">Draft</span>\n    </header>\n    <section class="pi-card pi-stack">\n      <p>${designNote}</p>\n    </section>`;
-  const html = template
-    .replace("{{title}}", escapeHtml(params.title))
-    .replace("{{artifactThemeCss}}", indent(theme, 4))
-    .replace("{{artifactSpecificCss}}", "")
-    .replace("{{artifactContent}}", designComment + content)
-    .replace("{{artifactScript}}", "");
-  const sourcePath = join(dir, "source", "index.html");
-  if (!existsSync(sourcePath)) await writeFile(sourcePath, html, "utf8");
+  const entryName = format === "md" ? "index.md" : "index.html";
+  const entryDist = format === "md" ? "index.md" : "index.html";
+  let sourcePath: string;
+  if (format === "md") {
+    const designMdNote = design ? `\n> Active artifact design system: ${design.displayPath} (${design.fingerprint}). Follow that DESIGN.md for visual choices.\n` : "";
+    const mdContent = `# ${escapeHtml(params.title)}\n\nReplace this scaffold with the artifact content.\n${designMdNote}`;
+    sourcePath = join(dir, "source", entryName);
+    if (!existsSync(sourcePath)) await writeFile(sourcePath, mdContent, "utf8");
+  } else {
+    const content = `    <header class="pi-header">\n      <div>\n        <h1 class="pi-title">${escapeHtml(params.title)}</h1>\n        <p class="pi-subtitle">Replace this scaffold with the artifact content.</p>\n      </div>\n      <span class="pi-badge pi-badge-blue">Draft</span>\n    </header>\n    <section class="pi-card pi-stack">\n      <p>${designNote}</p>\n    </section>`;
+    const html = template
+      .replace("{{title}}", escapeHtml(params.title))
+      .replace("{{artifactThemeCss}}", indent(theme, 4))
+      .replace("{{artifactSpecificCss}}", "")
+      .replace("{{artifactContent}}", designComment + content)
+      .replace("{{artifactScript}}", "");
+    sourcePath = join(dir, "source", entryName);
+    if (!existsSync(sourcePath)) await writeFile(sourcePath, html, "utf8");
+  }
   await buildDist(cwd, id);
 
   const now = new Date().toISOString();
@@ -71,20 +91,26 @@ export async function ensureArtifactScaffold(cwd: string, params: { id?: string;
       createdAt: now,
       updatedAt: now,
       designSystem: design ? { scope: design.scope, path: design.displayPath, fingerprint: design.fingerprint } : { scope: "built-in" },
-      entry: "dist/index.html",
-      versions: [{ version: 1, createdAt: now, path: "dist/index.html" }],
+      format,
+      entry: `dist/${entryDist}`,
+      versions: [{ version: 1, createdAt: now, path: `dist/${entryDist}` }],
     };
     await writeMetadata(cwd, meta);
   }
-  return { id, dir, sourcePath, distPath: join(dir, "dist", "index.html") };
+  return { id, dir, sourcePath, distPath: join(dir, "dist", entryDist) };
 }
 
 export async function buildDist(cwd: string, id: string, noindex = true) {
   const dir = artifactDir(cwd, id);
   await mkdir(join(dir, "dist"), { recursive: true });
-  const source = join(dir, "source", "index.html");
-  if (existsSync(source)) {
-    await cp(source, join(dir, "dist", "index.html"));
+  const sourceDir = join(dir, "source");
+  if (existsSync(sourceDir)) {
+    const files = await walkFiles(sourceDir);
+    for (const f of files) {
+      const relDir = f.rel.split("/").slice(0, -1).join("/");
+      if (relDir) await mkdir(join(dir, "dist", relDir), { recursive: true });
+      await cp(f.path, join(dir, "dist", f.rel));
+    }
   }
   const headers = [
     "/*",
@@ -102,10 +128,13 @@ export async function buildDist(cwd: string, id: string, noindex = true) {
 export async function importArtifactFromUrl(cwd: string, url: string, title?: string, id?: string) {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Failed to fetch ${url}: HTTP ${response.status}`);
-  const html = await response.text();
-  const inferredTitle = title || html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() || new URL(url).hostname;
-  const created = await ensureArtifactScaffold(cwd, { title: inferredTitle, id });
-  await writeFile(join(artifactDir(cwd, created.id), "source", "index.html"), html, "utf8");
+  const text = await response.text();
+  const isMarkdown = url.endsWith(".md") || response.headers.get("content-type")?.includes("markdown");
+  const inferredTitle = title || text.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() || (isMarkdown ? text.match(/^#\s+(.+)$/m)?.[1]?.trim() : null) || new URL(url).hostname;
+  const format = isMarkdown ? "md" as const : "html" as const;
+  const created = await ensureArtifactScaffold(cwd, { title: inferredTitle, id, format });
+  const entryName = format === "md" ? "index.md" : "index.html";
+  await writeFile(join(artifactDir(cwd, created.id), "source", entryName), text, "utf8");
   await buildDist(cwd, created.id);
   const meta = await readMetadata(cwd, created.id);
   meta.latestPublishedUrl = url;
@@ -159,6 +188,8 @@ export async function walkFiles(dir: string): Promise<Array<{ path: string; rel:
 
 const mime: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
+  ".htm": "text/html; charset=utf-8",
+  ".md": "text/markdown; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
@@ -183,10 +214,16 @@ export async function ensurePreviewServer(cwd: string): Promise<number> {
     const parts = url.pathname.slice(prefix.length).split("/").filter(Boolean);
     const id = parts.shift();
     if (!id) { res.writeHead(404); res.end("Missing artifact id"); return; }
-    const rel = parts.length ? parts.join("/") : "index.html";
+    const rel = parts.length ? parts.join("/") : "";
     const safeRel = rel.replace(/\.\.+/g, "");
-    const p = join(artifactDir(cwd, id), "dist", safeRel);
-    if (!resolve(p).startsWith(resolve(artifactDir(cwd, id), "dist")) || !existsSync(p)) {
+    const distDir = join(artifactDir(cwd, id), "dist");
+    let p = join(distDir, safeRel);
+    if (!safeRel || safeRel.endsWith("/")) {
+      for (const idx of ["index.html", "index.md", "index.htm", "README.md"]) {
+        if (existsSync(join(distDir, idx))) { p = join(distDir, idx); break; }
+      }
+    }
+    if (!resolve(p).startsWith(resolve(distDir)) || !existsSync(p)) {
       res.writeHead(404); res.end("Not found"); return;
     }
     res.writeHead(200, { "content-type": mime[extname(p)] || "application/octet-stream" });

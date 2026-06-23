@@ -43,10 +43,11 @@ export default function piArtifacts(pi: ExtensionAPI) {
       title: Type.String({ description: "Artifact title" }),
       instructions: Type.String({ description: "What the artifact should communicate or do" }),
       kind: Type.Optional(Type.String({ description: "dashboard, diff-walkthrough, timeline, prototype, report, or custom" })),
+      format: Type.Optional(Type.String({ description: "html (default) or md for raw Markdown artifacts" })),
       id: Type.Optional(Type.String({ description: "Optional stable artifact id/slug" })),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-      const created = await ensureArtifactScaffold(ctx.cwd, params as { title: string; instructions: string; kind?: string; id?: string });
+      const created = await ensureArtifactScaffold(ctx.cwd, params as { title: string; instructions: string; kind?: string; id?: string; format?: "html" | "md" });
       const design = await resolveDesignSystem(ctx.cwd);
       return text(`Created artifact ${created.id}.\nSource: ${created.sourcePath}\nDist: ${created.distPath}\n\n${formatDesignSystemForPrompt(design)}\n\nNext: edit source/index.html to satisfy: ${(params as any).instructions}`, { ...created, designSystem: design });
     },

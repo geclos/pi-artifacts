@@ -20,6 +20,7 @@ export interface ArtifactMetadata {
   title: string;
   emoji?: string;
   kind?: string;
+  format?: "html" | "md";
   designSystem?: {
     scope: "project" | "user" | "built-in";
     path?: string;
