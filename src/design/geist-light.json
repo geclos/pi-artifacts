@@ -1,0 +1,21 @@
+{
+  "source": "https://vercel.com/design.md",
+  "name": "Geist Light",
+  "colors": {
+    "primary": "#171717",
+    "secondary": "#4d4d4d",
+    "tertiary": "#006bff",
+    "background-100": "#ffffff",
+    "background-200": "#fafafa",
+    "gray-100": "#f2f2f2",
+    "gray-400": "#eaeaea",
+    "gray-900": "#4d4d4d",
+    "gray-1000": "#171717",
+    "blue-700": "#006bff",
+    "red-800": "#ea001d",
+    "amber-700": "#ffae00",
+    "green-700": "#28a948"
+  },
+  "spacing": { "1": "4px", "2": "8px", "3": "12px", "4": "16px", "6": "24px", "8": "32px", "10": "40px", "16": "64px", "24": "96px" },
+  "rounded": { "sm": "6px", "md": "12px", "lg": "16px", "full": "9999px" }
+}

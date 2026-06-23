@@ -1,0 +1,35 @@
+{
+  "name": "pi-artifacts",
+  "version": "0.1.0",
+  "description": "Pi extension for generating, previewing, validating, and publishing self-contained artifacts.",
+  "type": "module",
+  "keywords": [
+    "pi-package",
+    "pi",
+    "artifacts",
+    "cloudflare",
+    "geist"
+  ],
+  "pi": {
+    "extensions": [
+      "./src/index.ts"
+    ],
+    "skills": [
+      "./skills/artifact-designer"
+    ]
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "latest",
+    "typebox": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "tsx": "latest",
+    "typescript": "latest",
+    "wrangler": "^4.103.0"
+  }
+}

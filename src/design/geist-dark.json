@@ -1,0 +1,21 @@
+{
+  "source": "https://vercel.com/design.dark.md",
+  "name": "Geist Dark",
+  "colors": {
+    "primary": "#ededed",
+    "secondary": "#a0a0a0",
+    "tertiary": "#006efe",
+    "background-100": "#000000",
+    "background-200": "#000000",
+    "gray-100": "#1a1a1a",
+    "gray-400": "#2e2e2e",
+    "gray-900": "#a0a0a0",
+    "gray-1000": "#ededed",
+    "blue-700": "#006efe",
+    "red-800": "#e2162a",
+    "amber-700": "#ffae00",
+    "green-700": "#51d56a"
+  },
+  "spacing": { "1": "4px", "2": "8px", "3": "12px", "4": "16px", "6": "24px", "8": "32px", "10": "40px", "16": "64px", "24": "96px" },
+  "rounded": { "sm": "6px", "md": "12px", "lg": "16px", "full": "9999px" }
+}
