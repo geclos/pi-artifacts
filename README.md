@@ -4,7 +4,7 @@
 
 Polished, shareable artifacts for [pi](https://github.com/badlogic/pi-mono).
 
-`pi-artifacts` allows Pi to turn a prompt into a self-contained HTML report, dashboard, timeline, prototype, or walkthrough—then validate, preview, import, and publish it with cloudflare temporal accounts.
+`pi-artifacts` allows Pi to turn a prompt into a self-contained HTML report, dashboard, timeline, prototype, or walkthrough—then validate, preview, import, and publish it with Cloudflare temporal accounts.
 
 ## Demo
 
