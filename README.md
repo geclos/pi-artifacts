@@ -1,3 +1,5 @@
+https://github.com/user-attachments/assets/c57d9e60-4857-4bd0-a96e-ff02c51385ea
+
 # pi-artifacts
 
 ![Prompt to artifact](docs/assets/prompt-to-artifact.png)
